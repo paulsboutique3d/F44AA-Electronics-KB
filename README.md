@@ -1,5 +1,7 @@
 # F44AA Pulse Rifle Replica
 
+> **⚠️ WORK IN PROGRESS — This project is under active development and has NOT been tested on hardware yet. Audio files are not included. Pin assignments, schematics, and code may change significantly. Use at your own risk.**
+
 ESP32-S3 powered replica of the F44AA Pulse Rifle from Alien: Romulus (2024). Full-auto firing, ammo counter, muzzle flash, and audio effects.
 
 ## Features
