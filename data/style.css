@@ -1,0 +1,453 @@
+/* F44AA Pulse Rifle - Authentic Aliens Movie UI Style */
+/* Inspired by the UA 571-C Remote Sentry Weapon System */
+
+body {
+    font-family: monospace;
+    margin: 0;
+    padding: 0;
+    background: #000;
+    color: #ff0;
+    line-height: 1.4;
+    font-weight: bold;
+}
+
+/* Margin utility classes */
+.margin-top {
+    margin-top: 20px;
+}
+
+/* Test page and error page styles */
+.test-page-body {
+    font-family: monospace;
+    background: #000;
+    color: #ff0;
+    padding: 20px;
+    font-weight: bold;
+}
+
+.test-page-title {
+    border-bottom: 4px solid #ff0;
+    padding-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.test-page-content {
+    border: 3px solid #ff0;
+    padding: 15px;
+    margin: 10px 0;
+    border-radius: 0;
+    background: #001100;
+}
+
+.test-page-link {
+    color: #ff0;
+    font-weight: bold;
+}
+
+.error-page-body {
+    background: #000;
+    color: #ff0;
+    font-family: monospace;
+    padding: 20px;
+}
+
+/* Progress bar utility classes */
+.progress-bar-full {
+    width: 100%;
+}
+
+.progress-bar-empty {
+    width: 0%;
+}
+
+/* Display utility classes */
+.display-block {
+    display: block;
+}
+
+.display-none {
+    display: none;
+}
+
+h1 {
+    color: #ff0;
+    border-bottom: 4px solid #ff0;
+    padding-bottom: 5px;
+    text-align: center;
+    margin-bottom: 10px;
+    font-size: 24px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+h2 {
+    color: #ff0;
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 18px;
+    text-transform: uppercase;
+    border-bottom: 3px solid #ff0;
+    padding-bottom: 5px;
+}
+
+h3 {
+    color: #ff0;
+    margin-top: 15px;
+    margin-bottom: 10px;
+    font-size: 14px;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+.main-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 5px;
+    margin-bottom: 5px;
+}
+
+.column {
+    border: 4px solid #ff0;
+    padding: 5px;
+    border-radius: 0;
+    min-height: 500px;
+    background: #001100;
+}
+
+.sub-section {
+    border: 3px solid #ff0;
+    padding: 5px;
+    margin: 5px 0;
+    border-radius: 0;
+    background: #000;
+}
+
+.section {
+    border: 3px solid #ff0;
+    padding: 5px;
+    margin: 5px 0;
+    border-radius: 0;
+}
+
+input, select, button {
+    background: #000;
+    color: #ff0;
+    border: 3px solid #ff0;
+    padding: 8px;
+    margin: 5px;
+    font-family: monospace;
+    border-radius: 0;
+    font-weight: bold;
+}
+
+button {
+    cursor: pointer;
+    text-transform: uppercase;
+}
+
+button:hover {
+    background: #ff0;
+    color: #000;
+}
+
+.log {
+    border: 3px solid #ff0;
+    padding: 10px;
+    height: 200px;
+    overflow-y: auto;
+    font-family: monospace;
+    white-space: pre-wrap;
+    background: #000;
+    border-radius: 0;
+}
+
+p {
+    margin: 8px 0;
+    font-weight: bold;
+}
+
+span {
+    font-weight: bold;
+}
+
+label {
+    font-weight: bold;
+    color: #ff0;
+}
+
+div {
+    border-radius: 0;
+}
+
+pre {
+    border-radius: 0;
+    border: 2px solid #ff0;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .main-grid {
+        grid-template-columns: 1fr;
+        gap: 5px;
+    }
+    
+    .column {
+        min-height: auto;
+        padding: 5px;
+    }
+}
+
+/* Specific component styles */
+.torch-color-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.torch-color-button {
+    border: 3px solid #ff0;
+    min-width: 50px;
+    border-radius: 0;
+}
+
+.torch-color-red {
+    background: red;
+    color: white;
+}
+
+.torch-color-green {
+    background: green;
+    color: white;
+}
+
+.torch-color-blue {
+    background: blue;
+    color: white;
+}
+
+.torch-color-yellow {
+    background: yellow;
+    color: black;
+}
+
+.torch-color-magenta {
+    background: magenta;
+    color: white;
+}
+
+.torch-color-cyan {
+    background: cyan;
+    color: black;
+}
+
+.torch-color-white {
+    background: white;
+    color: black;
+}
+
+.torch-color-orange {
+    background: orange;
+    color: black;
+}
+
+.custom-slider {
+    width: 80px;
+}
+
+.display-color-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 10px;
+}
+
+.display-color-red {
+    background: #800;
+    color: #fff;
+}
+
+.display-color-green {
+    background: #080;
+    color: #fff;
+}
+
+.display-color-blue {
+    background: #008;
+    color: #fff;
+}
+
+.display-color-yellow {
+    background: #880;
+    color: #fff;
+}
+
+.display-color-magenta {
+    background: #808;
+    color: #fff;
+}
+
+.display-color-cyan {
+    background: #088;
+    color: #fff;
+}
+
+.display-color-white {
+    background: #888;
+    color: #000;
+}
+
+.network-item {
+    padding: 8px;
+    border: 3px solid #ff0;
+    margin: 2px;
+    cursor: pointer;
+    background: #001100;
+    border-radius: 0;
+}
+
+.connect-form {
+    display: none;
+    margin-top: 10px;
+    border: 3px solid #ff0;
+    padding: 10px;
+    border-radius: 0;
+}
+
+.hidden {
+    display: none;
+}
+
+.visible {
+    display: block;
+}
+
+.margin-top {
+    margin-top: 10px;
+}
+
+.margin-top-5 {
+    margin-top: 5px;
+}
+
+.bluetooth-logs {
+    height: 150px;
+}
+
+.test-warning {
+    color: #ff0;
+    font-weight: bold;
+}
+
+.progress-bar-container {
+    border: 3px solid #ff0;
+    height: 20px;
+    margin: 5px 0;
+    border-radius: 0;
+}
+
+.progress-bar {
+    background: #ff0;
+    height: 100%;
+    width: 0%;
+    transition: width 0.3s;
+}
+
+.ammo-display {
+    font-family: monospace;
+    font-size: 12px;
+    line-height: 1.2;
+    background: #000;
+    color: #0f0;
+    padding: 10px;
+    border: 3px solid #ff0;
+    border-radius: 0;
+    overflow-x: auto;
+}
+
+.camera-preview {
+    width: 100%;
+    max-width: 320px;
+    height: 180px;
+    border: 3px solid #ff0;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #888;
+    border-radius: 0;
+    font-size: 12px;
+}
+
+.camera-stream {
+    width: 100%;
+    max-width: 320px;
+    height: auto;
+    border: 3px solid #0f0;
+    background: #000;
+    border-radius: 0;
+}
+
+.camera-controls {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    margin: 10px 0;
+}
+
+.camera-controls button {
+    flex: 1;
+    min-width: 80px;
+    padding: 8px 5px;
+    font-size: 11px;
+}
+
+.camera-preview-test {
+    width: 100%;
+    max-width: 320px;
+    height: 180px;
+    border: 3px solid #0f0;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #0f0;
+    border-radius: 0;
+}
+
+.wifi-password-input {
+    width: 200px;
+}
+
+.color-input-small {
+    width: 60px;
+}
+
+.file-input {
+    margin: 10px 0;
+}
+
+.magazine-loaded {
+    color: red;
+}
+
+.magazine-empty {
+    color: green;
+}
+
+.test-fire-active {
+    background: #ff0000;
+}
+
+/* Dynamic color classes for ammo display */
+.ammo-empty {
+    color: #ff0000;
+}
+
+.ammo-low {
+    color: #ff0;
+}
+
+.ammo-normal {
+    color: #0f0;
+}

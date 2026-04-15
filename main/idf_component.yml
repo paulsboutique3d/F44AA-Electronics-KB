@@ -1,0 +1,5 @@
+## IDF Component Manager Manifest File for main component
+dependencies:
+  espressif/esp32-camera: "^2.0.4"
+  espressif/esp-dl: "==3.1.5"
+  espressif/pedestrian_detect: "^0.2.3"

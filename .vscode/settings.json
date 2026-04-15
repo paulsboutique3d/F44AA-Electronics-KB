@@ -1,0 +1,25 @@
+{
+    "idf.pythonInstallPath": "/usr/bin/python3",
+    "idf.flashType": "UART",
+    "idf.espIdfPath": "/home/rob/esp-idf",
+    "idf.pythonBinPath": "/home/rob/.espressif/python_env/idf6.0_py3.11_env/bin/python",
+    "idf.customExtraPaths": "/home/rob/.espressif/tools/xtensa-esp-elf-gdb/14.2_20240403/xtensa-esp-elf-gdb/bin:/home/rob/.espressif/tools/riscv32-esp-elf-gdb/14.2_20240403/riscv32-esp-elf-gdb/bin:/home/rob/.espressif/tools/xtensa-esp32-elf/esp-13.2.0_20240305/xtensa-esp32-elf/bin:/home/rob/.espressif/tools/xtensa-esp32s2-elf/esp-13.2.0_20240305/xtensa-esp32s2-elf/bin:/home/rob/.espressif/tools/xtensa-esp32s3-elf/esp-13.2.0_20240305/xtensa-esp32s3-elf/bin:/home/rob/.espressif/tools/riscv32-esp-elf/esp-13.2.0_20240305/riscv32-esp-elf/bin:/home/rob/.espressif/tools/esp32ulp-elf/2.38_20240113/esp32ulp-elf/bin:/home/rob/.espressif/tools/openocd-esp32/v0.12.0-esp32-20240821/openocd-esp32/bin:/home/rob/.espressif/tools/esp-rom-elfs/20240305/",
+    "idf.customExtraVars": {
+        "OPENOCD_SCRIPTS": "/home/rob/.espressif/tools/openocd-esp32/v0.12.0-esp32-20240821/openocd-esp32/share/openocd/scripts",
+        "ESP_ROM_ELF_DIR": "/home/rob/.espressif/tools/esp-rom-elfs/20240305/"
+    },
+    "idf.gitPath": "/usr/bin/git",
+    "idf.portWin": "/dev/ttyUSB0",
+    "idf.port": "/dev/ttyUSB0",
+    "idf.flashBaudRate": "460800",
+    "idf.monitorBaudRate": "115200",
+    "idf.openOcdConfigs": [
+        "board/esp32s3-builtin.cfg"
+    ],
+    "idf.adapterTargetName": "esp32s3",
+    "idf.cmakeCompilerArgs": [],
+    "idf.ninjaArgs": [],
+    "idf.buildPath": "${workspaceFolder}/build",
+    "idf.sdkconfigFilePath": "${workspaceFolder}/sdkconfig",
+    "idf.buildDirectoryPath": "${workspaceFolder}/build"
+}
