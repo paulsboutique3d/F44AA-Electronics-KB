@@ -46,23 +46,8 @@ ESP32-S3 powered replica of the F44AA Pulse Rifle from Alien: Romulus (2024). Fu
 
 Full pinout: [PINOUT.md](PINOUT.md)
 
-## Build & Flash
 
-Requires [ESP-IDF v6.0+](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/get-started/).
 
-```bash
-# Setup environment
-source $HOME/esp-idf/export.sh
-
-# Build
-idf.py build
-
-# Flash (Linux/Mac)
-idf.py -p /dev/ttyUSB0 flash monitor
-
-# Flash (Windows)
-idf.py -p COM3 flash monitor
-```
 
 ## Web Interface
 
