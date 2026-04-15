@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file camera_display.c
  * @brief Camera Feed Display Module for F44AA Pulse Rifle
  * 
@@ -21,8 +21,6 @@
 
 #include "camera_display.h"
 #include "camera.h"
-#include "pins_config.h"
-#include "st7789.h"
 #include "driver/spi_master.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
@@ -30,10 +28,30 @@
 #include "freertos/task.h"
 #include <string.h>
 
+// Second display pins (camera feed) - shares SPI bus with counter display
+// Using SPI3 bus: shares MOSI (GPIO 1) and SCLK (GPIO 44) with counter display
+// Each display has unique CS/DC/RST/BLK pins
+#define CAM_DISPLAY_MOSI     1    // SPI Data (shared with counter display)
+#define CAM_DISPLAY_SCLK     44   // SPI Clock (shared with counter display)
+#define CAM_DISPLAY_CS       21   // Chip Select (unique)
+#define CAM_DISPLAY_DC       33   // Data/Command (unique)
+#define CAM_DISPLAY_RST      34   // Reset (unique)
+#define CAM_DISPLAY_BLK      35   // Backlight/Power (unique)
+
 // Display configuration for camera feed (1.9" 170x320 in portrait mode)
 #define CAM_PANEL_WIDTH 170
 #define CAM_PANEL_HEIGHT 320
 #define CAM_DISPLAY_BUFFER_SIZE (CAM_PANEL_WIDTH * CAM_PANEL_HEIGHT * 2) // RGB565
+
+// ST7789 Commands
+#define ST7789_SWRESET     0x01
+#define ST7789_SLPOUT      0x11
+#define ST7789_COLMOD      0x3A
+#define ST7789_MADCTL      0x36
+#define ST7789_CASET       0x2A
+#define ST7789_RASET       0x2B
+#define ST7789_RAMWR       0x2C
+#define ST7789_DISPON      0x29
 
 // Colors (RGB565)
 #define COLOR_BLACK   0x0000
@@ -56,7 +74,7 @@ static void cam_display_send_cmd(uint8_t cmd) {
     memset(&t, 0, sizeof(t));
     t.length = 8;
     t.tx_buffer = &cmd;
-    gpio_set_level(PIN_CAM_DISP_DC, 0);  // Command mode
+    gpio_set_level(CAM_DISPLAY_DC, 0);  // Command mode
     ret = spi_device_transmit(cam_display_spi, &t);
     assert(ret == ESP_OK);
 }
@@ -69,7 +87,7 @@ static void cam_display_send_data(const uint8_t* data, int len) {
     memset(&t, 0, sizeof(t));
     t.length = len * 8;
     t.tx_buffer = data;
-    gpio_set_level(PIN_CAM_DISP_DC, 1);  // Data mode
+    gpio_set_level(CAM_DISPLAY_DC, 1);  // Data mode
     ret = spi_device_transmit(cam_display_spi, &t);
     assert(ret == ESP_OK);
 }
@@ -111,27 +129,27 @@ esp_err_t camera_display_init(void) {
     gpio_config_t io_conf = {
         .intr_type = GPIO_INTR_DISABLE,
         .mode = GPIO_MODE_OUTPUT,
-        .pin_bit_mask = (1ULL << PIN_CAM_DISP_CS) | (1ULL << PIN_CAM_DISP_DC) | 
-                       (1ULL << PIN_CAM_DISP_RST) | (1ULL << PIN_CAM_DISP_BLK),
+        .pin_bit_mask = (1ULL << CAM_DISPLAY_CS) | (1ULL << CAM_DISPLAY_DC) | 
+                       (1ULL << CAM_DISPLAY_RST) | (1ULL << CAM_DISPLAY_BLK),
         .pull_down_en = 0,
         .pull_up_en = 0,
     };
     gpio_config(&io_conf);
     
     // Reset display
-    gpio_set_level(PIN_CAM_DISP_RST, 0);
+    gpio_set_level(CAM_DISPLAY_RST, 0);
     vTaskDelay(pdMS_TO_TICKS(100));
-    gpio_set_level(PIN_CAM_DISP_RST, 1);
+    gpio_set_level(CAM_DISPLAY_RST, 1);
     vTaskDelay(pdMS_TO_TICKS(100));
     
     // Enable backlight
-    gpio_set_level(PIN_CAM_DISP_BLK, 1);
+    gpio_set_level(CAM_DISPLAY_BLK, 1);
     
     // Configure SPI device (shares bus with counter display)
     spi_device_interface_config_t devcfg = {
         .clock_speed_hz = 80 * 1000 * 1000,  // Increased from 26MHz to 80MHz for faster transfers
         .mode = 0,                            // SPI mode 0
-        .spics_io_num = PIN_CAM_DISP_CS,
+        .spics_io_num = CAM_DISPLAY_CS,
         .queue_size = 8,                      // Increased queue size for better performance
         .flags = SPI_DEVICE_HALFDUPLEX,       // Half-duplex mode for better performance
     };
@@ -185,7 +203,7 @@ void camera_display_clear(uint16_t color) {
     
     // Set full screen window
     cam_display_set_window(0, 0, CAM_PANEL_WIDTH - 1, CAM_PANEL_HEIGHT - 1);
-    gpio_set_level(PIN_CAM_DISP_DC, 1);  // Data mode
+    gpio_set_level(CAM_DISPLAY_DC, 1);  // Data mode
     
     // Use chunk-based approach for better performance
     const size_t chunk_lines = 40; // Process 40 lines at once
@@ -251,7 +269,7 @@ esp_err_t camera_display_show_frame(camera_fb_t* fb) {
     
     // Update display
     cam_display_set_window(0, 0, CAM_PANEL_WIDTH - 1, CAM_PANEL_HEIGHT - 1);
-    gpio_set_level(PIN_CAM_DISP_DC, 1);  // Data mode
+    gpio_set_level(CAM_DISPLAY_DC, 1);  // Data mode
     spi_transaction_t t;
     memset(&t, 0, sizeof(t));
     t.length = CAM_DISPLAY_BUFFER_SIZE * 8;
@@ -298,7 +316,7 @@ void camera_display_show_startup(void) {
     
     // Update display
     cam_display_set_window(0, 0, CAM_PANEL_WIDTH - 1, CAM_PANEL_HEIGHT - 1);
-    gpio_set_level(PIN_CAM_DISP_DC, 1);  // Data mode
+    gpio_set_level(CAM_DISPLAY_DC, 1);  // Data mode
     spi_transaction_t t;
     memset(&t, 0, sizeof(t));
     t.length = CAM_DISPLAY_BUFFER_SIZE * 8;
@@ -332,7 +350,7 @@ void camera_display_show_status(const char* status) {
     
     // Update display
     cam_display_set_window(0, 0, CAM_PANEL_WIDTH - 1, CAM_PANEL_HEIGHT - 1);
-    gpio_set_level(PIN_CAM_DISP_DC, 1);  // Data mode
+    gpio_set_level(CAM_DISPLAY_DC, 1);  // Data mode
     spi_transaction_t t;
     memset(&t, 0, sizeof(t));
     t.length = CAM_DISPLAY_BUFFER_SIZE * 8;
@@ -352,7 +370,7 @@ void camera_display_deinit(void) {
     ESP_LOGI(TAG, "Deinitializing camera display");
     
     // Turn off backlight
-    gpio_set_level(PIN_CAM_DISP_BLK, 0);
+    gpio_set_level(CAM_DISPLAY_BLK, 0);
     
     // Free display buffer
     if (display_buffer) {

@@ -12,7 +12,6 @@
 #pragma once
 
 #include "esp_err.h"
-#include "system_config.h"
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -22,6 +21,10 @@ typedef enum {
     BAR_COLOR,          // Color-coded ammo levels
     BAR_CLASSIC         // Classic Aliens movie style
 } counter_display_mode_t;
+
+// Display configuration constants
+#define COUNTER_MAX_AMMO 400
+#define COUNTER_BAR_COUNT 6
 
 // Initialization and configuration
 esp_err_t counter_display_init(void);

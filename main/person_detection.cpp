@@ -23,7 +23,6 @@
 #include "person_detection.h"
 #include "esp_log.h"
 #include "esp_timer.h"
-#include <inttypes.h>
 #include <string.h>
 #include <new>
 
@@ -170,7 +169,7 @@ esp_err_t person_detection_run_inference(const uint8_t* image_data, size_t image
     memcpy(&last_result, result, sizeof(person_detection_result_t));
     
     if (detected) {
-        ESP_LOGI(TAG, "Person detected! Confidence: %.2f, Time: %" PRIu32 " ms", 
+        ESP_LOGI(TAG, "Person detected! Confidence: %.2f, Time: %u ms", 
                  result->confidence, result->inference_time_ms);
     }
     

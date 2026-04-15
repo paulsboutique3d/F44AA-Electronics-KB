@@ -13,10 +13,6 @@
  */
 
 #include "driver/rmt_encoder.h"
-
-#ifndef RMT_ENCODER_FUNC_ATTR
-#define RMT_ENCODER_FUNC_ATTR
-#endif
 #include "esp_check.h"  
 
 // LED strip encoder configuration type

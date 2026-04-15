@@ -291,22 +291,91 @@ static const char* index_html =
 "</div>"
 "</div>"
 "</div>"
-"<script type='application/javascript' src='/app.js'></script>"
-"</body></html>";
+"<script type='application/javascript'>"
+"console.log('JavaScript loading started');"
+"window.debugTest=function(){alert('Debug test works!');};"
+"function updateLogs(){"
+"  var el=document.getElementById('logs');"
+"  if(!el){"
+"    console.log('Log update skipped: #logs not in DOM');"
+"    return;"
+"  }"
+"  fetch('/logs')"
+"    .then(function(r){return r.text()})"
+"    .then(function(d){"
+"      var el2=document.getElementById('logs');"
+"      if(!el2){"
+"        console.log('Log update skipped after fetch: #logs removed');"
+"        return;"
+"      }"
+"      el2.innerHTML=d;"
+"    })"
+"    .catch(function(e){console.log('Log update failed:',e);});"
+"}"
+"function updateBluetoothLogs(){"
+"  var el=document.getElementById('bluetoothLogs');"
+"  if(!el){"
+"    console.log('Bluetooth log update skipped: #bluetoothLogs not in DOM');"
+"    return;"
+"  }"
+"  fetch('/bluetooth-logs')"
+"    .then(function(r){return r.text()})"
+"    .then(function(d){"
+"      var el2=document.getElementById('bluetoothLogs');"
+"      if(!el2){"
+"        console.log('Bluetooth log update skipped after fetch: #bluetoothLogs removed');"
+"        return;"
+"      }"
+"      el2.innerHTML=d;"
+"    })"
+"    .catch(function(e){"
+"      console.log('Bluetooth log update failed:',e);"
+"      var el3=document.getElementById('bluetoothLogs');"
+"      if(el3){el3.innerHTML='Error loading Bluetooth logs';}"
+"    });"
+"}"
+"function clearBluetoothLogs(){if(confirm('Clear Bluetooth logs?')){fetch('/bluetooth-logs/clear').then(function(r){return r.text()}).then(function(d){document.getElementById('bluetoothLogs').innerHTML='Bluetooth logs cleared';updateBluetoothLogs();}).catch(function(e){console.log('Clear Bluetooth logs failed:',e);});}}"
+"function toggleTorch(){fetch('/torch-toggle').then(function(r){return r.json()}).then(function(d){document.getElementById('torchStatus').innerText=d.enabled?'ON':'OFF';document.getElementById('torchToggle').innerText=d.enabled?'OFF':'ON';setTimeout(updateStatus,200);}).catch(function(e){console.log('Torch toggle failed:',e);});}"
+"function setTorchColor(r,g,b){var url='/torch-color?r='+r+'&g='+g+'&b='+b;fetch(url).then(function(response){return response.json()}).then(function(d){console.log('Torch color set to:',r,g,b);document.getElementById('redSlider').value=r;document.getElementById('greenSlider').value=g;document.getElementById('blueSlider').value=b;document.getElementById('redValue').innerText=r;document.getElementById('greenValue').innerText=g;document.getElementById('blueValue').innerText=b;setTimeout(updateStatus,200);}).catch(function(e){console.log('Torch color failed:',e);});}"
+"function updateCustomColor(){var r=document.getElementById('redSlider').value;var g=document.getElementById('greenSlider').value;var b=document.getElementById('blueSlider').value;document.getElementById('redValue').innerText=r;document.getElementById('greenValue').innerText=g;document.getElementById('blueValue').innerText=b;}"
+"function applyCustomColor(){var r=document.getElementById('redSlider').value;var g=document.getElementById('greenSlider').value;var b=document.getElementById('blueSlider').value;setTorchColor(r,g,b);}"
+"function scanWiFi(){fetch('/wifi-scan').then(function(r){return r.json()}).then(function(d){var l=document.getElementById('networkList');var html='';for(var i=0;i<d.networks.length;i++){var n=d.networks[i];var lockIcon=n.secure?'&#128274;':'&#128275;';html+=\"<div class='network-item' onclick=\\\"selectNetwork('\"+n.ssid.replace(/\"/g,'&quot;')+\"',\"+(n.secure?1:0)+\")\\\">\"+n.ssid+\" (\"+n.rssi+\"dBm) \"+lockIcon+\" \"+n.auth+\"</div>\";}l.innerHTML=html;}).catch(function(e){console.log('WiFi scan failed:',e);});}"
+"function selectNetwork(ssid,secure){document.getElementById('selectedSSID').innerText=ssid;var passwordSection=document.getElementById('passwordSection');if(secure){passwordSection.classList.remove('hidden');passwordSection.classList.add('visible');document.getElementById('wifiPassword').focus();}else{passwordSection.classList.add('hidden');passwordSection.classList.remove('visible');document.getElementById('wifiPassword').value='';}document.getElementById('connectForm').classList.remove('hidden');document.getElementById('connectForm').classList.add('visible');}"
+"function connectToWiFi(){var ssid=document.getElementById('selectedSSID').innerText;var password=document.getElementById('wifiPassword').value;console.log('Connecting to:',ssid,'with password length:',password.length);var params=new URLSearchParams();params.append('ssid',ssid);params.append('password',password);fetch('/wifi-connect',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:params}).then(function(r){return r.text()}).then(function(d){alert('WiFi connection initiated: '+d);document.getElementById('connectForm').classList.add('hidden');document.getElementById('connectForm').classList.remove('visible');setTimeout(updateStatus,5000);}).catch(function(e){alert('Connection failed: '+e);});}"
+"function cancelConnect(){document.getElementById('connectForm').classList.add('hidden');document.getElementById('connectForm').classList.remove('visible');document.getElementById('wifiPassword').value='';}"
+"function wifi_disconnect(){if(confirm('Disconnect from current WiFi network?')){fetch('/wifi-disconnect').then(function(r){return r.text()}).then(function(d){alert(d);setTimeout(updateStatus,2000);}).catch(function(e){alert('Disconnect failed: '+e);});}}"
+"function forgetNetwork(){if(confirm('Forget saved WiFi network credentials? This will clear all saved networks.')){fetch('/wifi-forget').then(function(r){return r.text()}).then(function(d){alert(d);setTimeout(updateStatus,2000);}).catch(function(e){alert('Forget failed: '+e);});}}"
+"function uploadFirmware(){var fileInput=document.getElementById('firmwareFile');var file=fileInput.files[0];if(!file){alert('Please select a firmware file (.bin)');return;}if(!file.name||file.name.slice(-4).toLowerCase()!='.bin'){alert('Please select a valid .bin firmware file');return;}if(confirm('Upload firmware: '+file.name+'? Device will restart after upload.')){var formData=new FormData();formData.append('firmware',file);var otaProgress=document.getElementById('otaProgress');otaProgress.classList.remove('hidden');otaProgress.classList.add('visible');var sEl=document.getElementById('otaStatus');if(sEl){sEl.innerText='Uploading firmware...';}var xhr=new XMLHttpRequest();xhr.upload.onprogress=function(e){if(e.lengthComputable){var percent=Math.round((e.loaded/e.total)*100);document.getElementById('uploadPercent').innerText=percent;document.getElementById('progressBar').style.width=percent+'%';}};xhr.onload=function(){if(xhr.status===200){var sEl2=document.getElementById('otaStatus');if(sEl2){sEl2.innerText='Upload complete! Device restarting...';}setTimeout(function(){var p=document.getElementById('otaProgress');p.classList.add('hidden');p.classList.remove('visible');alert('Firmware uploaded successfully. Device is restarting.');window.location.reload();},3000);}else{var sEl3=document.getElementById('otaStatus');if(sEl3){sEl3.innerText='Upload failed: '+xhr.responseText;}alert('Firmware upload failed: '+xhr.responseText);}};xhr.onerror=function(){var sEl4=document.getElementById('otaStatus');if(sEl4){sEl4.innerText='Upload error';}alert('Upload error occurred');};xhr.open('POST','/ota-upload');xhr.send(formData);}}"
+"var cameraStreamActive=false;"
+"function toggleCameraStream(){var streamImg=document.getElementById('cameraStream');var placeholder=document.getElementById('cameraPlaceholder');var btn=document.getElementById('streamToggle');if(cameraStreamActive){cameraStreamActive=false;streamImg.src='';streamImg.classList.add('hidden');placeholder.classList.remove('hidden');btn.innerText='START STREAM';document.getElementById('cameraStatus').innerText='Stopped';}else{cameraStreamActive=true;streamImg.src='/camera-stream?t='+Date.now();streamImg.classList.remove('hidden');placeholder.classList.add('hidden');btn.innerText='STOP STREAM';document.getElementById('cameraStatus').innerText='Streaming';}}"
+"function capturePhoto(){window.open('/camera-capture?t='+Date.now(),'_blank');}"
+"function updateConfigFallback(){var vol=document.getElementById('volume').value;var dropdown=document.getElementById('audiomode_select');var am=dropdown.value;window.location.href='/config-get?volume='+vol+'&audiomode='+am;}"
+"var lastUserInteraction=0;"
+"document.addEventListener('input',function(){lastUserInteraction=Date.now();});"
+"document.addEventListener('change',function(){lastUserInteraction=Date.now();});"
+"document.addEventListener('touchstart',function(){lastUserInteraction=Date.now();});"
+"document.addEventListener('touchend',function(){lastUserInteraction=Date.now();});"
+"function updateStatus(){if(Date.now()-lastUserInteraction<2000){return;}fetch('/status').then(function(r){return r.json()}).then(function(d){document.getElementById('ammo').innerText=d.ammo;var magStatus=document.getElementById('magazine_status');magStatus.innerText=d.magazineInserted?'LOADED':'UNLOADED';magStatus.className=d.magazineInserted?'magazine-loaded':'magazine-empty';if(d.testModeEnabled){document.getElementById('testAmmo').innerText=d.ammo;updateAmmoDisplay(d.ammo,400);}document.getElementById('audiomode_display').innerText=d.audiomode;document.getElementById('volume_display').innerText=d.volume;document.getElementById('bluetooth_status').innerText=d.bluetoothEnabled?(d.bluetoothConnected?'Connected':'Enabled, Not Connected'):'Disabled';if(document.getElementById('volume').value!=d.volume){document.getElementById('volume').value=d.volume;}var expectedAudioMode=(d.audiomode==='Line Out')?'1':'0';if(document.getElementById('audiomode_select').value!=expectedAudioMode){document.getElementById('audiomode_select').value=expectedAudioMode;}var expectedCamDisplay=d.cameraDisplayEnabled?'1':'0';if(document.getElementById('camdisplay_select').value!=expectedCamDisplay){document.getElementById('camdisplay_select').value=expectedCamDisplay;}document.getElementById('wifiStatus').innerText=d.wifiStatus;document.getElementById('connectedSSID').innerText=d.connectedSSID;document.getElementById('currentIP').innerText=d.currentIP;document.getElementById('firmwareVersion').innerText=d.version;var fpEl=document.getElementById('firmwarePartition');if(fpEl){fpEl.innerText=d.partition;}document.getElementById('torchStatus').innerText=d.torchEnabled?'ON':'OFF';document.getElementById('torchToggle').innerText=d.torchEnabled?'OFF':'ON';if(document.getElementById('redSlider')&&typeof d.torchRed!=='undefined'){document.getElementById('redSlider').value=d.torchRed;document.getElementById('redValue').innerText=d.torchRed;document.getElementById('greenSlider').value=d.torchGreen;document.getElementById('greenValue').innerText=d.torchGreen;document.getElementById('blueSlider').value=d.torchBlue;document.getElementById('blueValue').innerText=d.torchBlue;}var cs=document.getElementById('cameraStatus');if(cs){cs.innerText=d.cameraStatus;}var tms=document.getElementById('testModeStatus');if(tms){tms.innerText=d.testModeEnabled?'ENABLED':'DISABLED';document.getElementById('testModeToggle').innerText=d.testModeEnabled?'DISABLE TEST MODE':'ENABLE TEST MODE';var testControls=document.getElementById('testControls');if(d.testModeEnabled){testControls.classList.remove('hidden');testControls.classList.add('visible');}else{testControls.classList.add('hidden');testControls.classList.remove('visible');}}}).catch(function(e){console.log('Status update failed:',e);});}"
+"window.addEventListener('DOMContentLoaded',function(){"
+"  setInterval(updateStatus,5000);"
+"  setTimeout(updateStatus,1000);"
+"  if(document.getElementById('logs')){updateLogs();}"
+"  setInterval(updateAmmoDisplayPeriodic,500);"
+"  setTimeout(function(){updateAmmoDisplay(400,400);},500);"
+"});"
+"function setDisplayColor(){var colorInput=document.getElementById('colorInput');var colorValue=String(colorInput.value||'').toUpperCase();if(!/^[0-9A-F]{1,4}$/.test(colorValue)){alert('Please enter a valid hex color (e.g., F800 for red)');return;}var paddedColor=('0000'+colorValue).slice(-4);fetch('/display-color?color='+paddedColor).then(function(r){return r.json()}).then(function(d){document.getElementById('currentColor').innerText=d.color;document.getElementById('colorDisplay').innerText=d.color;var decimalValue=parseInt(paddedColor,16);document.getElementById('colorSlider').value=decimalValue;}).catch(function(e){alert('Failed to set color: '+e);});}"
+"function updateColorFromSlider(value){var v=parseInt(value,10);if(isNaN(v)){v=0;}var hexValue=v.toString(16).toUpperCase();hexValue=('0000'+hexValue).slice(-4);document.getElementById('colorDisplay').innerText='0x'+hexValue;document.getElementById('colorInput').value=hexValue;fetch('/display-color?color='+hexValue).then(function(r){return r.json()}).then(function(d){document.getElementById('currentColor').innerText=d.color;}).catch(function(e){console.log('Slider color update failed:',e);});}"
+"function setPresetColor(hexColor){document.getElementById('colorInput').value=hexColor;setDisplayColor();}"
+"function updateAmmoDisplay(current,max){if(current===undefined||current===null){current=0;}if(max===undefined||max===null){max=400;}current=parseInt(current,10)||0;max=parseInt(max,10)||400;var bars=0;if(current>=336)bars=6;else if(current>=269)bars=5;else if(current>=202)bars=4;else if(current>=135)bars=3;else if(current>=68)bars=2;else if(current>=1)bars=1;else bars=0;var actualBars=bars;var display='+--------------------------------------+\\n';display+='|                                      |\\n';for(var i=0;i<6;i++){display+='|';var barLine='';for(var j=0;j<6;j++){if(j<actualBars){barLine+='####';}else{barLine+='    ';}if(j<5)barLine+='  ';}while(barLine.length<38){barLine+=' ';}display+=barLine+'|\\n';}display+='|                                      |\\n';display+='+--------------------------------------+\\n';display+='AMMO: '+current+'/'+max+' rounds ('+actualBars+' bars)';var ammoDisplayElement=document.getElementById('ammoDisplay');if(ammoDisplayElement){ammoDisplayElement.innerText=display;ammoDisplayElement.className='ammo-display';if(current===0){ammoDisplayElement.classList.add('ammo-empty');}else if(current<max*0.2){ammoDisplayElement.classList.add('ammo-low');}else{ammoDisplayElement.classList.add('ammo-normal');}}}"
+"function toggleTestMode(){fetch('/test-mode/toggle').then(function(r){return r.json()}).then(function(d){document.getElementById('testModeStatus').innerText=d.enabled?'ENABLED':'DISABLED';document.getElementById('testModeToggle').innerText=d.enabled?'DISABLE TEST MODE':'ENABLE TEST MODE';var testControls=document.getElementById('testControls');if(d.enabled){testControls.classList.remove('hidden');testControls.classList.add('visible');}else{testControls.classList.add('hidden');testControls.classList.remove('visible');}if(d.enabled){document.getElementById('testAmmo').innerText=(d.ammo||400);updateAmmoDisplay((d.ammo||400),400);}else{updateAmmoDisplay(0,400);}setTimeout(updateStatus,200);}).catch(function(e){console.log('Test mode toggle failed:',e);});}"
+"var testFiring=false;"
+"var testFireInterval=null;"
+"var testStatusInterval=null;"
+"function updateTestAmmo(){if(testFiring){fetch('/status').then(function(r){return r.json()}).then(function(d){if(d.testModeEnabled){var ammoEl=document.getElementById('testAmmo');if(ammoEl.innerText!==String(d.ammo||0)){ammoEl.innerText=d.ammo;updateAmmoDisplay(d.ammo,200);}}}).catch(function(e){console.log('Test ammo update failed:',e);});}}"
+"function toggleTestFire(){if(!testFiring){testFiring=true;var testFireButton=document.getElementById('testFireButton');testFireButton.innerText='STOP FULL AUTO';testFireButton.classList.add('test-fire-active');testFireInterval=setInterval(updateTestAmmo,500);testStatusInterval=setInterval(updateStatus,1000);fetch('/test-mode/fire-start').then(function(r){return r.json()}).then(function(d){console.log('Test firing started');setTimeout(updateStatus,200);}).catch(function(e){console.log('Test fire start failed:',e);testFiring=false;var b=document.getElementById('testFireButton');b.innerText='START FULL AUTO';b.classList.remove('test-fire-active');if(testFireInterval){clearInterval(testFireInterval);testFireInterval=null;}if(testStatusInterval){clearInterval(testStatusInterval);testStatusInterval=null;}});}else{testFiring=false;if(testFireInterval){clearInterval(testFireInterval);testFireInterval=null;}if(testStatusInterval){clearInterval(testStatusInterval);testStatusInterval=null;}var btn=document.getElementById('testFireButton');btn.innerText='START FULL AUTO';btn.classList.remove('test-fire-active');fetch('/test-mode/fire-stop').then(function(r){return r.json()}).then(function(d){console.log('Test firing stopped');document.getElementById('testAmmo').innerText=(d.ammo||0);updateAmmoDisplay((d.ammo||0),400);setTimeout(updateStatus,200);}).catch(function(e){console.log('Test fire stop failed:',e);});}}"
+"function updateAmmoDisplayPeriodic(){var tme=document.getElementById('testModeStatus');var testModeEnabled=tme&&tme.innerText==='ENABLED';if(testModeEnabled){var currentAmmo=parseInt(document.getElementById('testAmmo').innerText,10)||0;updateAmmoDisplay(currentAmmo,400);}}"
+"</script></body></html>";
 
-
-// JavaScript Handler
-static esp_err_t js_handler(httpd_req_t *req) {
-    extern const char app_js_start[] asm("_binary_app_js_start");
-    extern const char app_js_end[] asm("_binary_app_js_end");
-    const size_t app_js_size = (app_js_end - app_js_start);
-    
-    httpd_resp_set_type(req, "application/javascript");
-    httpd_resp_set_hdr(req, "Cache-Control", "public, max-age=86400");
-    httpd_resp_set_hdr(req, "Content-Encoding", "identity");
-    
-    return httpd_resp_send(req, app_js_start, app_js_size);
-}
 
 // CSS Handler
 static esp_err_t css_handler(httpd_req_t *req) {
@@ -1129,14 +1198,6 @@ static esp_err_t start_webserver(void) {
         };
         httpd_register_uri_handler(server, &css_uri);
 
-        // Register JS handler for external JavaScript
-        httpd_uri_t js_uri = {
-            .uri = "/app.js",
-            .method = HTTP_GET,
-            .handler = js_handler
-        };
-        httpd_register_uri_handler(server, &js_uri);
-
         httpd_uri_t camera_page_uri = {
             .uri = "/camera",
             .method = HTTP_GET,
@@ -1307,6 +1368,14 @@ static esp_err_t start_webserver(void) {
 // Public Functions
 webserver_err_t webserver_init(void) {
     ESP_LOGI(TAG, "Initializing F44AA web server with WiFi configuration");
+    
+    // Initialize NVS
+    esp_err_t ret = nvs_flash_init();
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        ret = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK(ret);
 
     // Initialize WiFi configuration system
     wifi_config_init();

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file counter_display.c
  * @brief F44AA Ammo Counter Display Module
  * 
@@ -28,9 +28,6 @@
  */
 
 #include "counter_display.h"
-#include "pins_config.h"
-#include "system_config.h"
-#include "st7789.h"
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
@@ -42,9 +39,33 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
+// Primary display pins (ammo counter) - Avoiding camera pins and PSRAM conflicts
+#define DISPLAY_MOSI     1    // SPI Data (GPIO 1) - Safe pin, no conflicts
+#define DISPLAY_SCLK     44   // SPI Clock (GPIO 44) - Safe pin, no conflicts  
+#define DISPLAY_CS       42   // Chip Select (GPIO 42) - Safe pin
+#define DISPLAY_DC       41   // Data/Command (GPIO 41) - Safe pin
+#define DISPLAY_RST      40   // Reset (GPIO 40) - Safe pin
+#define DISPLAY_BLK      39   // Backlight/Power (GPIO 39) - Safe pin
+
 // Display configuration (1.9" ST7789 320x170 landscape orientation)
 #define PANEL_WIDTH 320
 #define PANEL_HEIGHT 170
+#define MAX_AMMO 400        // Total ammunition capacity
+#define BAR_COUNT 6         // 6 visual bars
+
+// ST7789 Commands
+#define ST7789_SWRESET     0x01
+#define ST7789_SLPOUT      0x11
+#define ST7789_COLMOD      0x3A
+#define ST7789_MADCTL      0x36
+#define ST7789_CASET       0x2A
+#define ST7789_RASET       0x2B
+#define ST7789_RAMWR       0x2C
+#define ST7789_INVOFF      0x20
+#define ST7789_INVON       0x21
+#define ST7789_DISPON      0x29
+
+#define ST7789_NORON      0x13
 
 // Colors (RGB565) - Display uses custom color mapping for this panel
 #define COLOR_BLACK   0xFFFF  // "black" for your inverted panel
@@ -58,7 +79,7 @@
 
 
 static const char *TAG = "COUNTER_DISPLAY";
-static int current_ammo = F44AA_MAX_AMMO;  // Current ammo count (0-400)
+static int current_ammo = MAX_AMMO;  // Current ammo count (0-400)
 static counter_display_mode_t current_mode = BAR_F44AA;
 static spi_device_handle_t display_spi;
 static uint16_t current_bar_color = 0xF800;  // Default bar color: true RED (RGB565)
@@ -74,7 +95,7 @@ void display_send_cmd(uint8_t cmd) {
     memset(&t, 0, sizeof(t));
     t.length = 8;
     t.tx_buffer = &cmd;
-    gpio_set_level(PIN_COUNTER_DC, 0);  // Command mode
+    gpio_set_level(DISPLAY_DC, 0);  // Command mode
     ret = spi_device_transmit(display_spi, &t);
     assert(ret == ESP_OK);
 }
@@ -87,7 +108,7 @@ void display_send_data(uint8_t *data, int len) {
     memset(&t, 0, sizeof(t));
     t.length = len * 8;
     t.tx_buffer = data;
-    gpio_set_level(PIN_COUNTER_DC, 1);  // Data mode
+    gpio_set_level(DISPLAY_DC, 1);  // Data mode
     ret = spi_device_transmit(display_spi, &t);
     assert(ret == ESP_OK);
 }
@@ -95,9 +116,9 @@ void display_send_data(uint8_t *data, int len) {
 // Initialize ST7789 display (RGB565, landscape, non-inverted)
 void display_init_st7789(void) {
     // Hard reset
-    gpio_set_level(PIN_COUNTER_RST, 0);
+    gpio_set_level(DISPLAY_RST, 0);
     vTaskDelay(pdMS_TO_TICKS(100));
-    gpio_set_level(PIN_COUNTER_RST, 1);
+    gpio_set_level(DISPLAY_RST, 1);
     vTaskDelay(pdMS_TO_TICKS(100));
 
     // Software reset
@@ -143,10 +164,12 @@ void display_init_st7789(void) {
 
 // Set display window
 void display_set_window(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1) {
+    // Column address set
     display_send_cmd(ST7789_CASET);
     uint8_t col_data[4] = {x0 >> 8, x0 & 0xFF, x1 >> 8, x1 & 0xFF};
     display_send_data(col_data, 4);
     
+    // Row address set
     display_send_cmd(ST7789_RASET);
     uint8_t row_data[4] = {y0 >> 8, y0 & 0xFF, y1 >> 8, y1 & 0xFF};
     display_send_data(row_data, 4);
@@ -182,7 +205,7 @@ void display_fill(uint16_t color) {
     memset(&t, 0, sizeof(t));
     t.length = buffer_size * 16; // buffer_size pixels * 16 bits
     t.tx_buffer = color_buffer;
-    gpio_set_level(PIN_COUNTER_DC, 1);  // Data mode
+    gpio_set_level(DISPLAY_DC, 1);  // Data mode
     
     // Send in large chunks - much faster than line-by-line
     int lines_remaining = PANEL_HEIGHT;
@@ -234,7 +257,7 @@ void display_draw_rect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t 
     spi_transaction_t t;
     memset(&t, 0, sizeof(t));
     t.tx_buffer = rect_buffer;
-    gpio_set_level(PIN_COUNTER_DC, 1);  // Data mode
+    gpio_set_level(DISPLAY_DC, 1);  // Data mode
     
     // Send in optimized chunks
     int lines_remaining = h;
@@ -420,8 +443,8 @@ esp_err_t display_spi_init(void) {
     // Configure SPI bus for primary display
     spi_bus_config_t buscfg = {
         .miso_io_num = -1,
-        .mosi_io_num = PIN_SPI_MOSI,
-        .sclk_io_num = PIN_SPI_SCLK,
+        .mosi_io_num = DISPLAY_MOSI,
+        .sclk_io_num = DISPLAY_SCLK,
         .quadwp_io_num = -1,
         .quadhd_io_num = -1,
         .max_transfer_sz = PANEL_WIDTH * PANEL_HEIGHT * 2,  // Full screen buffer size
@@ -434,7 +457,7 @@ esp_err_t display_spi_init(void) {
     spi_device_interface_config_t devcfg = {
         .clock_speed_hz = 80*1000*1000,     // Increased from 40MHz to 80MHz for faster transfers
         .mode = 0,
-        .spics_io_num = PIN_COUNTER_CS,
+        .spics_io_num = DISPLAY_CS,
         .queue_size = 8,                     // Increased queue size for better DMA performance
         .flags = SPI_DEVICE_HALFDUPLEX,      // Half-duplex mode for better performance
     };
@@ -443,7 +466,7 @@ esp_err_t display_spi_init(void) {
     
     // Initialize control pins (DC, RST, and Backlight)
     gpio_config_t io_conf = {
-        .pin_bit_mask = (1ULL << PIN_COUNTER_DC) | (1ULL << PIN_COUNTER_RST) | (1ULL << PIN_COUNTER_BLK),
+        .pin_bit_mask = (1ULL << DISPLAY_DC) | (1ULL << DISPLAY_RST) | (1ULL << DISPLAY_BLK),
         .mode = GPIO_MODE_OUTPUT,
         .pull_up_en = GPIO_PULLUP_DISABLE,
         .pull_down_en = GPIO_PULLDOWN_DISABLE,
@@ -452,7 +475,7 @@ esp_err_t display_spi_init(void) {
     gpio_config(&io_conf);
     
     // Enable backlight
-    gpio_set_level(PIN_COUNTER_BLK, 1);
+    gpio_set_level(DISPLAY_BLK, 1);
     
     return ESP_OK;
 }
@@ -473,7 +496,7 @@ esp_err_t counter_display_init(void) {
     // Clear display with black background
     display_fill(COLOR_BLACK);
     
-    current_ammo = F44AA_MAX_AMMO;
+    current_ammo = MAX_AMMO;
     counter_display_draw_bars();
     
     return ESP_OK;
@@ -516,7 +539,7 @@ void counter_display_draw_bars(void) {
         int bar_width = 40;
         int bar_height = 120;
         int bar_spacing = 16;
-        int start_x = (PANEL_WIDTH - (F44AA_BAR_COUNT * bar_width + (F44AA_BAR_COUNT - 1) * bar_spacing)) / 2;
+        int start_x = (PANEL_WIDTH - (BAR_COUNT * bar_width + (BAR_COUNT - 1) * bar_spacing)) / 2;
         int start_y = 50;
         
         // Draw all bars at once for better performance
@@ -536,7 +559,7 @@ void counter_display_draw_bars(void) {
         int bar_width = 40;
         int bar_height = 120;
         int bar_spacing = 16;
-        int start_x = (PANEL_WIDTH - (F44AA_BAR_COUNT * bar_width + (F44AA_BAR_COUNT - 1) * bar_spacing)) / 2;
+        int start_x = (PANEL_WIDTH - (BAR_COUNT * bar_width + (BAR_COUNT - 1) * bar_spacing)) / 2;
         int start_y = 50;
         
         // Only erase the bars that need to disappear
@@ -552,7 +575,7 @@ void counter_display_draw_bars(void) {
     last_drawn_bars = visible_bars;
     
     // ASCII art representation for logging (only every 10 rounds)
-    if (current_ammo % 10 == 0 || current_ammo == 0 || current_ammo == F44AA_MAX_AMMO) {
+    if (current_ammo % 10 == 0 || current_ammo == 0 || current_ammo == MAX_AMMO) {
         char bar_display[8][32];
         
         // Clear the display buffer
@@ -634,7 +657,7 @@ bool counter_display_is_empty(void) {
 }
 
 int counter_display_get_ammo_percentage(void) {
-    return (current_ammo * 100) / F44AA_MAX_AMMO;
+    return (current_ammo * 100) / MAX_AMMO;
 }
 
 bool counter_display_can_reload(void) {
@@ -647,7 +670,7 @@ void counter_display_reset_ammo(void) {
         return;
     }
     
-    current_ammo = F44AA_MAX_AMMO;
+    current_ammo = MAX_AMMO;
     ESP_LOGI(TAG, "RELOADED! Ammo reset to %d rounds", current_ammo);
     counter_display_draw_bars();
 }
@@ -675,7 +698,7 @@ void counter_display_set_bar_color(uint16_t color) {
 
 // Force reset ammo for testing purposes (bypasses empty check) - optimized
 void counter_display_force_reset_ammo(void) {
-    current_ammo = F44AA_MAX_AMMO;
+    current_ammo = MAX_AMMO;
     display_needs_full_redraw = true;  // Force full redraw for reload
     ESP_LOGI(TAG, "FORCE RELOADED! Ammo reset to %d rounds (testing mode)", current_ammo);
     counter_display_draw_bars();

@@ -32,6 +32,3 @@ idf_component_register(SRCS ${COMPONENT_SRCS}
 
 # Embed the CSS file as a binary
 target_add_binary_data(${COMPONENT_LIB} "../data/style.css" TEXT)
-
-# Embed the JavaScript file as a binary
-target_add_binary_data(${COMPONENT_LIB} "../data/app.js" TEXT)

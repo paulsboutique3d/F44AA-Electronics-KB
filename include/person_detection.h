@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file person_detection.h
  * @brief AI Person Detection for F44AA Pulse Rifle
  * 
@@ -178,6 +178,245 @@ bool person_detection_is_running(void);
  * @return ESP_OK on success
  */
 esp_err_t person_detection_reset_stats(void);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif // PERSON_DETECTION_H
+
+#ifndef PERSON_DETECTION_H
+#define PERSON_DETECTION_H
+
+#include <stdint.h>
+#include <stdbool.h>
+#include "esp_err.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// Configuration constants
+#define PERSON_DETECTION_DEFAULT_CONFIDENCE 0.7f
+#define PERSON_DETECTION_MAX_DETECTIONS 100
+
+// Quantization types
+typedef enum {
+    QUANTIZATION_FLOAT32 = 0,
+    QUANTIZATION_INT8 = 1
+} quantization_type_t;
+
+// Bounding box structure
+typedef struct {
+    int x;      // X coordinate
+    int y;      // Y coordinate  
+    int width;  // Width
+    int height; // Height
+} detection_bbox_t;
+    float detection_threshold;     // Minimum confidence for person detection (default: 0.6)
+    bool continuous_detection;     // Enable continuous detection mode
+    uint32_t detection_interval_ms; // Interval between detections (default: 100ms)
+    bool enable_esp_nn;           // Enable ESP-NN optimization (default: true)
+    bool debug_output;            // Enable debug logging
+} detection_config_t;
+
+// Detection callback function type
+typedef void (*detection_callback_t)(const detection_result_t* result, void* user_data);
+
+// Detection modes
+typedef enum {
+    DETECTION_MODE_DISABLED = 0,    // Detection disabled
+    DETECTION_MODE_SINGLE,          // Single shot detection
+    DETECTION_MODE_CONTINUOUS,      // Continuous detection
+    DETECTION_MODE_TRIGGERED        // Triggered by external event
+} detection_mode_t;
+
+// Detection status
+typedef enum {
+    DETECTION_STATUS_UNINITIALIZED = 0,
+    DETECTION_STATUS_INITIALIZING,
+    DETECTION_STATUS_READY,
+    DETECTION_STATUS_RUNNING,
+    DETECTION_STATUS_ERROR
+} detection_status_t;
+
+/**
+ * @brief Initialize TensorFlow Lite Micro person detection system
+ * 
+ * Sets up the TensorFlow Lite interpreter, loads the person detection model,
+ * allocates tensor arena memory, and initializes ESP-NN optimizations.
+ * 
+ * @param config Pointer to detection configuration structure
+ * @return ESP_OK on success, error code on failure
+ */
+esp_err_t person_detection_init(const detection_config_t* config);
+
+/**
+ * @brief Deinitialize person detection system
+ * 
+ * Cleans up allocated memory and stops detection tasks.
+ * 
+ * @return ESP_OK on success
+ */
+esp_err_t person_detection_deinit(void);
+
+/**
+ * @brief Start person detection with specified mode
+ * 
+ * @param mode Detection mode to use
+ * @return ESP_OK on success, error code on failure
+ */
+esp_err_t person_detection_start(detection_mode_t mode);
+
+/**
+ * @brief Stop person detection
+ * 
+ * @return ESP_OK on success
+ */
+esp_err_t person_detection_stop(void);
+
+/**
+ * @brief Perform single person detection on image data
+ * 
+ * Processes a single 96x96 grayscale image through the TensorFlow model
+ * and returns detection results.
+ * 
+ * @param image_data Pointer to 96x96 grayscale image data (9216 bytes)
+ * @param result Pointer to store detection result
+ * @return ESP_OK on success, error code on failure
+ */
+esp_err_t person_detection_detect(const uint8_t* image_data, detection_result_t* result);
+
+/**
+ * @brief Detect person in camera frame buffer
+ * 
+ * Convenience function that takes a camera frame buffer, resizes/converts
+ * to 96x96 grayscale, and performs detection.
+ * 
+ * @param frame_buffer Pointer to camera frame buffer
+ * @param frame_width Width of input frame
+ * @param frame_height Height of input frame
+ * @param pixel_format Pixel format of input frame
+ * @param result Pointer to store detection result
+ * @return ESP_OK on success, error code on failure
+ */
+esp_err_t person_detection_detect_frame(const uint8_t* frame_buffer, 
+                                       int frame_width, 
+                                       int frame_height,
+                                       int pixel_format,
+                                       detection_result_t* result);
+
+/**
+ * @brief Register callback for detection results
+ * 
+ * @param callback Function to call when detection completes
+ * @param user_data User data to pass to callback
+ * @return ESP_OK on success
+ */
+esp_err_t person_detection_register_callback(detection_callback_t callback, void* user_data);
+
+/**
+ * @brief Get current detection status
+ * 
+ * @return Current detection system status
+ */
+detection_status_t person_detection_get_status(void);
+
+/**
+ * @brief Get detection statistics
+ * 
+ * @param total_detections Pointer to store total detection count
+ * @param persons_detected Pointer to store person detection count
+ * @param avg_inference_time_ms Pointer to store average inference time
+ * @return ESP_OK on success
+ */
+esp_err_t person_detection_get_stats(uint32_t* total_detections, 
+                                    uint32_t* persons_detected,
+                                    uint32_t* avg_inference_time_ms);
+
+/**
+ * @brief Update detection configuration
+ * 
+ * @param config New configuration to apply
+ * @return ESP_OK on success, error code on failure
+ */
+esp_err_t person_detection_update_config(const detection_config_t* config);
+
+/**
+ * @brief Get current detection configuration
+ * 
+ * @param config Pointer to store current configuration
+ * @return ESP_OK on success
+ */
+esp_err_t person_detection_get_config(detection_config_t* config);
+
+/**
+ * @brief Trigger single detection (for triggered mode)
+ * 
+ * @return ESP_OK on success, error code if not in triggered mode
+ */
+esp_err_t person_detection_trigger(void);
+
+/**
+ * @brief Get last detection result
+ * 
+ * @param result Pointer to store last detection result
+ * @return ESP_OK on success, ESP_ERR_NOT_FOUND if no detection performed yet
+ */
+esp_err_t person_detection_get_last_result(detection_result_t* result);
+
+/**
+ * @brief Check if detection system is ready
+ * 
+ * @return true if ready for detection, false otherwise
+ */
+bool person_detection_is_ready(void);
+
+/**
+ * @brief Get default detection configuration
+ * 
+ * @return Default configuration structure
+ */
+detection_config_t person_detection_get_default_config(void);
+
+// Utility functions for integration
+
+/**
+ * @brief Convert camera frame to detection input format
+ * 
+ * Converts and resizes camera frame to 96x96 grayscale format required
+ * by the person detection model.
+ * 
+ * @param src_buffer Source frame buffer
+ * @param src_width Source frame width
+ * @param src_height Source frame height
+ * @param src_format Source pixel format
+ * @param dst_buffer Destination buffer (must be 9216 bytes)
+ * @return ESP_OK on success, error code on failure
+ */
+esp_err_t person_detection_convert_frame(const uint8_t* src_buffer,
+                                        int src_width,
+                                        int src_height, 
+                                        int src_format,
+                                        uint8_t* dst_buffer);
+
+// Internal utility functions
+static esp_err_t resize_grayscale_image(const uint8_t* src, int src_w, int src_h,
+                                       uint8_t* dst, int dst_w, int dst_h);
+
+static esp_err_t convert_rgb565_to_grayscale_and_resize(const uint8_t* src, int src_w, int src_h,
+                                                       uint8_t* dst, int dst_w, int dst_h);
+
+/**
+ * @brief Get memory usage information
+ * 
+ * @param tensor_arena_used Bytes used in tensor arena
+ * @param total_heap_used Total heap memory used by detection system
+ * @return ESP_OK on success
+ */
+esp_err_t person_detection_get_memory_usage(size_t* tensor_arena_used, size_t* total_heap_used);
 
 #ifdef __cplusplus
 }

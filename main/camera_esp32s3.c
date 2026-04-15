@@ -96,7 +96,7 @@ camera_err_t camera_init(void) {
         .sccb_i2c_port = 0,                  // I2C port 0
     };
 
-    ESP_LOGI(TAG, "Camera config: XCLK=%dHz, Format=RGB565, FrameSize=QVGA, FB_Count=%d", 
+    ESP_LOGI(TAG, "Camera config: XCLK=%luHz, Format=RGB565, FrameSize=QVGA, FB_Count=%d", 
              config.xclk_freq_hz, config.fb_count);
     
     // Initialize the camera

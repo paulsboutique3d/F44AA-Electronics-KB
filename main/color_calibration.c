@@ -143,8 +143,16 @@ static int get_color_index(uint16_t standard_color) {
 esp_err_t color_calibration_init(void) {
     ESP_LOGI(TAG, "Initializing color calibration system");
     
-    // Open NVS handle (NVS already initialized in main)
-    esp_err_t ret = nvs_open(NVS_NAMESPACE, NVS_READWRITE, &nvs_color_handle);
+    // Initialize NVS
+    esp_err_t ret = nvs_flash_init();
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        ret = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK(ret);
+    
+    // Open NVS handle
+    ret = nvs_open(NVS_NAMESPACE, NVS_READWRITE, &nvs_color_handle);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Error opening NVS handle: %s", esp_err_to_name(ret));
         return ret;

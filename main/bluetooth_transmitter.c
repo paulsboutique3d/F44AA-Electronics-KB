@@ -26,10 +26,13 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include <string.h>
-#include "pins_config.h"
 
-// KCX-BT_EMITTER UART config
+// KCX-BT_EMITTER UART pins - Freenove ESP32-S3 WROOM CAM
 #define BT_UART_NUM          UART_NUM_2     // UART2 (UART1 used by DFPlayer)
+#define BT_UART_TX_PIN       GPIO_NUM_45    // TX to KCX-BT_EMITTER RX
+#define BT_UART_RX_PIN       GPIO_NUM_46    // RX from KCX-BT_EMITTER TX  
+#define BT_KEY_PIN           GPIO_NUM_36    // KEY pin for power/pair control
+#define BT_LED_PIN           GPIO_NUM_48    // Status LED input
 
 // KEY pin timing (simulates physical button press)
 #define BT_KEY_SHORT_PRESS_MS   150         // Short press = power toggle
@@ -102,18 +105,18 @@ esp_err_t bluetooth_transmitter_init(void) {
     gpio_config_t key_conf = {
         .intr_type = GPIO_INTR_DISABLE,
         .mode = GPIO_MODE_OUTPUT,
-        .pin_bit_mask = (1ULL << PIN_BT_KEY),
+        .pin_bit_mask = (1ULL << BT_KEY_PIN),
         .pull_down_en = GPIO_PULLDOWN_DISABLE,
         .pull_up_en = GPIO_PULLUP_ENABLE,
     };
     gpio_config(&key_conf);
-    gpio_set_level(PIN_BT_KEY, 1);  // Keep KEY high (inactive)
+    gpio_set_level(BT_KEY_PIN, 1);  // Keep KEY high (inactive)
     
     // Configure LED status pin (optional - for monitoring)
     gpio_config_t io_conf = {
         .intr_type = GPIO_INTR_DISABLE,
         .mode = GPIO_MODE_INPUT,
-        .pin_bit_mask = (1ULL << PIN_BT_LED),
+        .pin_bit_mask = (1ULL << BT_LED_PIN),
         .pull_down_en = GPIO_PULLDOWN_DISABLE,
         .pull_up_en = GPIO_PULLUP_DISABLE,
     };
@@ -135,7 +138,7 @@ esp_err_t bluetooth_transmitter_init(void) {
         return ret;
     }
     
-    ret = uart_set_pin(BT_UART_NUM, PIN_BT_TX, PIN_BT_RX, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+    ret = uart_set_pin(BT_UART_NUM, BT_UART_TX_PIN, BT_UART_RX_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Failed to set UART pins: %s", esp_err_to_name(ret));
         return ret;
@@ -170,16 +173,34 @@ esp_err_t bluetooth_transmitter_init(void) {
     }
     
     ESP_LOGI(TAG, "Bluetooth transmitter initialized on UART%d (TX: GPIO%d, RX: GPIO%d, KEY: GPIO%d, LED: GPIO%d)", 
-             BT_UART_NUM, PIN_BT_TX, PIN_BT_RX, PIN_BT_KEY, PIN_BT_LED);
+             BT_UART_NUM, BT_UART_TX_PIN, BT_UART_RX_PIN, BT_KEY_PIN, BT_LED_PIN);
     
     return ESP_OK;
 }
 
+void bluetooth_transmitter_play_pause(void) {
+    ESP_LOGI(TAG, "Bluetooth play/pause command (not supported - use audio source controls)");
+    // KCX-BT_EMITTER is a transmitter, not a receiver
+    // Play/pause control would be on the receiving device (headphones/speakers)
+}
+
+void bluetooth_transmitter_next_track(void) {
+    ESP_LOGI(TAG, "Bluetooth next track command (not supported - use audio source controls)");
+    // KCX-BT_EMITTER is a transmitter, not a receiver
+    // Track control would be on the audio source or receiving device
+}
+
+void bluetooth_transmitter_prev_track(void) {
+    ESP_LOGI(TAG, "Bluetooth previous track command (not supported - use audio source controls)");
+    // KCX-BT_EMITTER is a transmitter, not a receiver
+    // Track control would be on the audio source or receiving device
+}
+
 // Simulate KEY button press via GPIO
 static void bt_key_press(uint32_t duration_ms) {
-    gpio_set_level(PIN_BT_KEY, 0);  // Press (active low)
+    gpio_set_level(BT_KEY_PIN, 0);  // Press (active low)
     vTaskDelay(pdMS_TO_TICKS(duration_ms));
-    gpio_set_level(PIN_BT_KEY, 1);  // Release
+    gpio_set_level(BT_KEY_PIN, 1);  // Release
 }
 
 void bluetooth_transmitter_enable(bool enable) {
@@ -259,7 +280,7 @@ void bluetooth_transmitter_deinit(void) {
     uart_driver_delete(BT_UART_NUM);
     
     // Reset LED pin
-    gpio_reset_pin(PIN_BT_LED);
+    gpio_reset_pin(BT_LED_PIN);
     
     bt_transmitter_initialized = false;
     bt_transmitter_enabled = false;

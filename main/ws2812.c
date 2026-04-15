@@ -31,7 +31,8 @@ typedef struct {
 // Function prototype
 esp_err_t rmt_new_led_strip_encoder(const led_strip_encoder_config_t *config, rmt_encoder_handle_t *ret_encoder);
 
-#include "pins_config.h"
+#define WS2812_MUZZLE_PIN 2     // Muzzle flash LED pin (ESP32-S3-CAM)
+#define WS2812_TORCH_PIN 3      // Torch LED pin (ESP32-S3-CAM)
 
 static const char *TAG = "WS2812";
 
@@ -68,7 +69,7 @@ void ws2812_torch_set_state(bool enabled) {
 
 void ws2812_init(void) {
     ESP_LOGI(TAG, "Initializing WS2812 with new RMT driver - Muzzle Flash on GPIO %d, Torch on GPIO %d", 
-             PIN_WS2812_MUZZLE, PIN_WS2812_TORCH);
+             WS2812_MUZZLE_PIN, WS2812_TORCH_PIN);
 
     // Create LED strip encoder
     led_strip_encoder_config_t encoder_config = {
@@ -78,7 +79,7 @@ void ws2812_init(void) {
 
     // Configure RMT TX channel for muzzle flash
     rmt_tx_channel_config_t muzzle_config = {
-        .gpio_num = PIN_WS2812_MUZZLE,
+        .gpio_num = WS2812_MUZZLE_PIN,
         .clk_src = RMT_CLK_SRC_DEFAULT,
         .resolution_hz = 10000000,  // 10MHz
         .mem_block_symbols = 64,
@@ -90,7 +91,7 @@ void ws2812_init(void) {
 
     // Configure RMT TX channel for torch
     rmt_tx_channel_config_t torch_config = {
-        .gpio_num = PIN_WS2812_TORCH,
+        .gpio_num = WS2812_TORCH_PIN,
         .clk_src = RMT_CLK_SRC_DEFAULT,
         .resolution_hz = 10000000,  // 10MHz
         .mem_block_symbols = 64,

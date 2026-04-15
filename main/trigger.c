@@ -16,15 +16,16 @@
 #include "trigger.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
-#include "pins_config.h"
+
+#define TRIGGER_PIN GPIO_NUM_0  // Moved from GPIO 21 to avoid camera pin conflict
 
 static const char *TAG = "TRIGGER";
 
 void trigger_init(void) {
-    ESP_LOGI(TAG, "Initializing trigger on GPIO %d", PIN_TRIGGER);
+    ESP_LOGI(TAG, "Initializing trigger on GPIO %d", TRIGGER_PIN);
     
     gpio_config_t io_conf = {
-        .pin_bit_mask = (1ULL << PIN_TRIGGER),
+        .pin_bit_mask = (1ULL << TRIGGER_PIN),
         .mode = GPIO_MODE_INPUT,
         .pull_up_en = GPIO_PULLUP_ENABLE,
         .pull_down_en = GPIO_PULLDOWN_DISABLE,
@@ -35,5 +36,5 @@ void trigger_init(void) {
 
 bool trigger_fired(void) {
     // Assuming trigger is active LOW (pressed = 0, released = 1)
-    return gpio_get_level(PIN_TRIGGER) == 0;
+    return gpio_get_level(TRIGGER_PIN) == 0;
 }

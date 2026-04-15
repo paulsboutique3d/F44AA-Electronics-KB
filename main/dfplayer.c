@@ -25,9 +25,10 @@
 #include <string.h>
 #include "dfplayer.h"
 #include "bluetooth_transmitter.h"
-#include "pins_config.h"
 
 #define DFPLAYER_UART_NUM      UART_NUM_1
+#define DFPLAYER_TX_PIN        GPIO_NUM_47  // ESP32-S3 TX → DFPlayer RX (moved from 15, conflicts with camera XCLK)
+#define DFPLAYER_RX_PIN        GPIO_NUM_14  // ESP32-S3 RX ← DFPlayer TX
 #define DFPLAYER_BAUD_RATE     9600
 
 static const char *TAG = "DFPlayer_Pro";
@@ -71,7 +72,7 @@ void dfplayer_init(void) {
 
     uart_driver_install(DFPLAYER_UART_NUM, 256, 0, 0, NULL, 0);
     uart_param_config(DFPLAYER_UART_NUM, &config);
-    uart_set_pin(DFPLAYER_UART_NUM, PIN_DFPLAYER_TX, PIN_DFPLAYER_RX, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+    uart_set_pin(DFPLAYER_UART_NUM, DFPLAYER_TX_PIN, DFPLAYER_RX_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
 
     vTaskDelay(pdMS_TO_TICKS(1000));  // Wait for DFPlayer Pro boot
 

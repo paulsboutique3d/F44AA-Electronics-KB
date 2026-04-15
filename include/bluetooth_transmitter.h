@@ -32,6 +32,30 @@ extern "C" {
 esp_err_t bluetooth_transmitter_init(void);
 
 /**
+ * @brief Send play/pause command to Bluetooth transmitter
+ * 
+ * Note: KCX-BT_EMITTER is an audio transmitter, not a receiver.
+ * Play/pause control would typically be handled by the audio source or receiving device.
+ */
+void bluetooth_transmitter_play_pause(void);
+
+/**
+ * @brief Send next track command to Bluetooth transmitter
+ * 
+ * Note: KCX-BT_EMITTER is an audio transmitter, not a receiver.
+ * Track control would typically be handled by the audio source or receiving device.
+ */
+void bluetooth_transmitter_next_track(void);
+
+/**
+ * @brief Send previous track command to Bluetooth transmitter
+ * 
+ * Note: KCX-BT_EMITTER is an audio transmitter, not a receiver.
+ * Track control would typically be handled by the audio source or receiving device.
+ */
+void bluetooth_transmitter_prev_track(void);
+
+/**
  * @brief Enable/disable Bluetooth transmitter
  * 
  * When enabled, performs module reset and initialization via AT commands.

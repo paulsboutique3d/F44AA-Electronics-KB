@@ -38,7 +38,6 @@
 #include "bluetooth_transmitter.h"
 #include "camera_display.h"
 #include "ai_targeting.h"
-#include "system_config.h"
 
 static const char *TAG = "F44AA";
 
@@ -115,11 +114,14 @@ void camera_display_stop(void) {
     camera_display_deinit();
 }
 
-
+#define FIRE_RATE_RPM 900
+#define FIRE_DELAY_MS (60000 / FIRE_RATE_RPM)
+#define TRIGGER_POLL_MS 10
+#define MAGAZINE_CHECK_MS 50
 
 // Full auto firing task
 void trigger_task(void *pvParameter) {
-    ESP_LOGI(TAG, "Trigger task started - Full Auto Mode (%d RPM)", F44AA_FIRE_RATE_RPM);
+    ESP_LOGI(TAG, "Trigger task started - Full Auto Mode (%d RPM)", FIRE_RATE_RPM);
 
     esp_err_t wdt_result = esp_task_wdt_delete(NULL);
     if (wdt_result != ESP_OK) {
@@ -137,7 +139,7 @@ void trigger_task(void *pvParameter) {
             esp_task_wdt_reset();
         }
 
-        if (magazine_check_counter++ >= (F44AA_MAGAZINE_CHECK_MS / F44AA_TRIGGER_POLL_MS)) {
+        if (magazine_check_counter++ >= (MAGAZINE_CHECK_MS / TRIGGER_POLL_MS)) {
             magazine_check_counter = 0;
 
             if (magazine_check_reload_event()) {
@@ -168,7 +170,7 @@ void trigger_task(void *pvParameter) {
                 if (debug_log_counter++ % 100 == 0) {
                     ESP_LOGW(TAG, "Trigger pulled but no magazine");
                 }
-                vTaskDelay(pdMS_TO_TICKS(F44AA_TRIGGER_POLL_MS));
+                vTaskDelay(pdMS_TO_TICKS(TRIGGER_POLL_MS));
                 taskYIELD();
                 continue;
             }
@@ -190,7 +192,7 @@ void trigger_task(void *pvParameter) {
             ws2812_flash();
             dfplayer_play_fire();
             counter_display_decrement();
-            vTaskDelay(pdMS_TO_TICKS(F44AA_FIRE_DELAY_MS));
+            vTaskDelay(pdMS_TO_TICKS(FIRE_DELAY_MS));
             taskYIELD();
 
         } else {
@@ -200,7 +202,7 @@ void trigger_task(void *pvParameter) {
                 was_trigger_pressed = false;
                 debug_log_counter = 0;
             }
-            vTaskDelay(pdMS_TO_TICKS(F44AA_TRIGGER_POLL_MS));
+            vTaskDelay(pdMS_TO_TICKS(TRIGGER_POLL_MS));
             taskYIELD();
         }
     }
@@ -313,7 +315,7 @@ void app_main(void) {
     }
 
     ESP_LOGI(TAG, "F44AA READY | %d RPM | Magazine: %s | Ammo: %d/400",
-             F44AA_FIRE_RATE_RPM,
+             FIRE_RATE_RPM,
              magazine_is_inserted() ? "LOADED" : "EMPTY",
              counter_display_get_ammo_count());
 }
